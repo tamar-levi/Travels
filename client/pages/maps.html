@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Israel Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        #map {
+            height: 100vh;
+        }
+
+        #coordinates {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        #addressInput {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            background-color: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-container {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="addressInput">
+        <input type="text" id="address" placeholder="Enter city" class="form-control" />
+        <button onclick="searchAddressSource()" class="btn btn-primary mt-2">Search origin city</button>
+        <button onclick="searchAddress()" class="btn btn-primary mt-2">Search end city</button>
+        <div class="btn-container">
+            <button onclick="addStartPoint()" class="btn btn-success mt-2">Add origin city</button>
+            <button onclick="addEndPoint()" class="btn btn-danger mt-2">Add end city</button>
+        </div>
+    </div>
+
+    <div id="map"></div>
+    <div id="coordinates">
+        <p>בחר נקודה על המפה:</p>
+        <p id="latlng">קואורדינטות: </p>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        var map = L.map('map').setView([31.7683, 35.2137], 12);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        map.setMaxBounds([
+            [29.5, 34], 
+            [33.5, 36.5] 
+        ]);
+
+        map.on('drag', function () {
+            map.panInsideBounds(map.getBounds());
+        });
+
+        var startPoint = null;
+        var endPoint = null;
+        var route = null;
+        var carIcon = L.icon({
+            iconUrl: 'https://img.icons8.com/ios/50/000000/car.png',
+            iconSize: [20, 20],  
+            iconAnchor: [10, 10], // מיקום האייקון
+            popupAnchor: [0, -25] // מיקום הפופאפ
+        });
+
+        var startIcon = L.icon({
+            iconUrl: 'https://img.icons8.com/ios/50/000000/marker.png', // אייקון התחלה
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        var endIcon = L.icon({
+            iconUrl: 'https://img.icons8.com/ios/50/000000/marker.png', // אייקון סיום
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        function addStartPoint() {
+            if (startPoint) {
+                alert('יש כבר נקודת התחלה');
+                return;
+            }
+
+            map.once('click', function (e) {
+                startPoint = L.marker([e.latlng.lat, e.latlng.lng], { icon: startIcon, draggable: true }).addTo(map)
+                    .bindPopup("<b>נקודת התחלה</b>")
+                    .openPopup();
+
+                var carMarker = L.marker([e.latlng.lat, e.latlng.lng], { icon: carIcon }).addTo(map);
+
+                startPoint.on('dragend', function (e) {
+                    var lat = e.target.getLatLng().lat;
+                    var lng = e.target.getLatLng().lng;
+                    document.getElementById('latlng').innerHTML = `קואורדינטות התחלה: Latitude - ${lat.toFixed(4)}, Longitude - ${lng.toFixed(4)}`;
+                    drawRoute();  
+
+                    carMarker.setLatLng([lat, lng]);
+                });
+
+                document.getElementById('latlng').innerHTML = `קואורדינטות התחלה: Latitude - ${e.latlng.lat.toFixed(4)}, Longitude - ${e.latlng.lng.toFixed(4)}`;
+                if (endPoint) {
+                    drawRoute();
+                }
+            });
+        }
+
+        function addEndPoint() {
+            if (endPoint) {
+                alert('יש כבר נקודת סיום');
+                return;
+            }
+
+            map.once('click', function (e) {
+                endPoint = L.marker([e.latlng.lat, e.latlng.lng], { icon: endIcon, draggable: true }).addTo(map)
+                    .bindPopup("<b>נקודת סיום</b>")
+                    .openPopup();
+
+                endPoint.on('dragend', function (e) {
+                    var lat = e.target.getLatLng().lat;
+                    var lng = e.target.getLatLng().lng;
+                    document.getElementById('latlng').innerHTML = `קואורדינטות סיום: Latitude - ${lat.toFixed(4)}, Longitude - ${lng.toFixed(4)}`;
+                    drawRoute(); 
+                });
+
+                document.getElementById('latlng').innerHTML = `קואורדינטות סיום: Latitude - ${e.latlng.lat.toFixed(4)}, Longitude - ${e.latlng.lng.toFixed(4)}`;
+                if (startPoint) {
+                    drawRoute();
+                }
+            });
+        }
+
+        function searchAddressSource() {
+            var address = document.getElementById('address').value;
+            var url = `https://nominatim.openstreetmap.org/search?format=json&q=${address}&addressdetails=1&countrycodes=IL`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+
+                        document.getElementById('latlng').innerHTML = `קואורדינטות התחלה: Latitude - ${lat}, Longitude - ${lon}`;
+
+                        if (!startPoint) {
+                            startPoint = L.marker([lat, lon], { icon: startIcon, draggable: true }).addTo(map)
+                                .bindPopup("<b>נקודת התחלה</b>")
+                                .openPopup();
+                        } else {
+                            alert('כבר קיימת נקודת התחלה');
+                        }
+
+                        map.setView([lat, lon], 14);
+                    } else {
+                        alert('הכתובת לא נמצאה.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    alert('הייתה בעיה בביצוע החיפוש.');
+                });
+        }
+
+        function searchAddress() {
+            var address = document.getElementById('address').value;
+            var url = `https://nominatim.openstreetmap.org/search?format=json&q=${address}&addressdetails=1&countrycodes=IL`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+
+                        document.getElementById('latlng').innerHTML = `קואורדינטות סיום: Latitude - ${lat}, Longitude - ${lon}`;
+
+                        if (!endPoint) {
+                            endPoint = L.marker([lat, lon], { icon: endIcon, draggable: true }).addTo(map)
+                                .bindPopup("<b>נקודת סיום</b>")
+                                .openPopup();
+                        } else {
+                            alert('כבר קיימת נקודת סיום');
+                        }
+
+                        map.setView([lat, lon], 14);
+                    } else {
+                        alert('הכתובת לא נמצאה.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    alert('הייתה בעיה בביצוע החיפוש.');
+                });
+        }
+
+        function drawRoute() {
+            if (startPoint && endPoint) {
+                var startLatLng = startPoint.getLatLng();
+                var endLatLng = endPoint.getLatLng();
+                if (route) {
+                    map.removeLayer(route);
+                }
+                route = L.polyline([startLatLng, endLatLng], { color: 'black' }).addTo(map);
+            }
+        }
+    </script>
+</body>
+
+</html>

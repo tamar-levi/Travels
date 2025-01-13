@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Travels</title>
+    <link rel="icon" href="../assets/favicon.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/main.css">
+</head>
+
+<body>
+    <!-- חלק עליון - יצירת מסלול, הוספת טרמפ וחיפוש -->
+    <div class="buttons d-flex align-items-center">
+        <button id="openCardButton" class="btn btn-primary" style="border:none">
+            Add Trip <i class="bi bi-plus-circle ms-2" style="color: white; font-size: 1rem; "></i>
+        </button>
+        <button id="routeSearch" class="btn btn-primary"
+            style="border:none; display: flex; align-items: center; margin-left: 0.6%;">
+            Create a Route
+            <i class="fas fa-route" style="margin-left: 8px;"></i>
+        </button>
+        <input class="form-control w-auto ms-2" id="Search" type="text" placeholder="Search..">
+        <button id="menuToggle" class="btn btn-primary" style="border:none; font-size: 0.9rem">
+            <i class="bi bi-list ms-2" style="color: white; font-size: 1rem; "></i> Filters
+        </button>
+    </div>
+    <!-- הצגת האקורדיונים -->
+    <div class="row flex-row-reverse">
+        <main class="col-md-9 d-flex justify-content-start">
+            <div class="container d-flex flex-column align-items-start">
+                <div id="trip-accordion-container" class="accordion w-75 mt-0" role="tablist">
+                </div>
+                <div id="pagination-container" class="mt-3 d-flex justify-content-start w-75"></div>
+            </div>
+        </main>
+    </div>
+    <!-- כרטיסיית הוספת טראמפ -->
+    <div id="overlay" class="overlay"></div>
+    <div id="tripCard" class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Trip Details</h5>
+            <form>
+                <!-- מקור ויעד באותה שורה -->
+                <div class="mb-3 row-container">
+                    <!-- מקור -->
+                    <div class="input-container">
+                        <label for="source" class="form-label">
+                            <i class="bi bi-geo-alt-fill"></i> Source
+                        </label>
+                        <input type="text" class="form-control" id="addSource" placeholder="Enter the source location">
+                    </div>
+                    <!-- יעד -->
+                    <div class="input-container">
+                        <label for="destination" class="form-label">
+                            <i class="bi bi-geo-fill"></i> Destination
+                        </label>
+                        <input type="text" class="form-control" id="addDestination" placeholder="Enter the destination">
+                    </div>
+                </div>
+
+                <!-- תאריך ושעה באותה שורה -->
+                <div class="mb-3 row-container">
+                    <!-- תאריך -->
+                    <div class="input-container">
+                        <label for="tripDate" class="form-label">
+                            <i class="bi bi-calendar-event"></i> Trip Date
+                        </label>
+                        <input type="date" class="form-control" id="tripDate">
+                    </div>
+                    <!-- שעה -->
+                    <div class="input-container">
+                        <label for="tripTime" class="form-label">
+                            <i class="bi bi-clock-fill"></i> Trip Time
+                        </label>
+                        <input type="time" class="form-control" id="tripTime">
+                    </div>
+                </div>
+
+                <!-- סוג רכב -->
+                <div class="mb-3">
+                    <label class="form-label">
+                        <i class="bi bi-car-front-fill"></i> Vehicle Type
+                    </label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="addVehicleType" id="addRegularVehicle"
+                                value="regular" checked>
+                            <label class="form-check-label" for="addRegularVehicle">Regular Vehicle</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="addVehicleType" id="addDisabledVehicle"
+                                value="disabled">
+                            <label class="form-check-label" for="addDisabledVehicle">Disabled Vehicle</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- מספר מקומות -->
+                <div class="mb-3">
+                    <label for="seats" class="form-label">
+                        <i class="bi bi-people-fill"></i> Number of Seats
+                    </label>
+                    <input type="number" class="form-control" id="addSeats" min="1" value="1"
+                        placeholder="Enter the number of seats">
+                </div>
+
+                <!-- נסיעה בהתנדבות -->
+                <div class="mb-3">
+                    <label class="form-label" id="volunteerFieldLabel">Is this a voluntary trip?</label>
+                    <div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="volunteerType" id="addVolunteer"
+                                value="volunteer" checked>
+                            <label class="form-check-label" for="addVolunteer">Yes, with pleasure.</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="volunteerType" id="addNoVolunteer"
+                                value="noVolunteer">
+                            <label class="form-check-label" for="addNoVolunteer">Another time</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="priceField" style="display: none;">
+                    <label for="price" class="form-label">
+                        <i class="bi bi-currency-dollar"></i> Price
+                    </label>
+                    <input type="number" class="form-control" id="AddPrice" min="10" max="50"
+                        placeholder="Enter the price">
+                </div>
+                <!-- כפתור -->
+                <button type="submit" class="btn btn-primary"
+                    style="border:none; align-self: flex-end; background-color: rgb(79, 115, 137);">
+                    Add <i class="bi bi-plus-circle ms-2" style="color: white; font-size: 1rem;"></i>
+                </button>
+                <span id="travelAdded" style="display: none;">The Travel added successfully</span>
+            </form>
+        </div>
+    </div>
+    <!-- פילטרים צדדים-->
+    <div id="sidebar" class="d-flex flex-column p-3 bg-light">
+        <button id="closeSidebar" class="btn-close" aria-label="Close"></button>
+        <div class="mb-4 custom-margin-left">
+            <label for="source" class="form-label">
+                <i class="bi bi-geo-alt-fill me-2"></i> Source
+            </label>
+            <select class="form-select w-75" id="source">
+                <option value="" disabled selected hidden>Select Source</option>
+            </select>
+        </div>
+
+        <div class="mb-4 custom-margin-left">
+            <label for="destination" class="form-label">
+                <i class="bi bi-geo-fill me-2"></i> Destination
+            </label>
+            <select class="form-select w-75" id="destination">
+                <option value="" disabled selected hidden>Select destination</option>
+            </select>
+        </div>
+
+        <div class="mb-4 custom-margin-left">
+            <label for="destination" class="form-label">
+                <i class="bi bi-calendar-event"></i> Date
+            </label>
+            <select class="form-select w-75" id="timeFilter">
+                <option value="" disabled selected hidden>Select Time</option>
+                <option value="today">Today</option>
+                <option value="this-week">This Week</option>
+                <option value="this-month">This Month</option>
+                <option value="all">All Trips</option>
+            </select>
+        </div>
+
+        <div class="mb-4 custom-margin-left">
+            <label for="seats" class="form-label">
+                <i class="bi bi-people-fill me-2"></i> Number of Seats
+            </label>
+            <input type="number" class="form-control w-75" id="seats" min="1" value="1"
+                placeholder="Enter the number of seats">
+        </div>
+
+        <div class="mb-4 custom-margin-left">
+            <label class="form-label">
+                <i class="bi bi-car-front-fill me-2"></i> Vehicle Type
+            </label>
+            <div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="vehicleType" id="allVehicle" value="All" checked>
+                    <label class="form-check-label" for="allVehicle">All Vehicles</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="vehicleType" id="regularVehicle"
+                        value="Regular Vehicle">
+                    <label class="form-check-label" for="regularVehicle">Regular Vehicle</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="vehicleType" id="disabledVehicle"
+                        value="Disabled Vehicle">
+                    <label class="form-check-label" for="disabledVehicle">Disabled Vehicle</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-check" style="margin-left: 15%;">
+            <input class="form-check-input" type="checkbox" id="volunteer">
+            <label class="form-check-label" for="volunteer">Voluntary Trip</label>
+        </div>
+
+        <div class="mb-4 custom-margin-left" id="priceFieldElement" style="display: block;">
+            <label for="price" class="form-label">
+                <i class="bi bi-currency-dollar me-2"></i> Price Range
+            </label>
+            <input type="range" class="form-range w-75" id="price" min="0" max="100" step="1">
+            <div class="d-flex justify-content-between">
+                <span id="priceValue"></span>
+            </div>
+        </div>
+        <div class="custom-margin-left" style="margin-top: 0; display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="filterButton">
+                Filter <i class="bi bi-funnel-fill ms-2" style="color: white;"></i>
+            </button>
+            <button class="btn btn-secondary" id="resetButton" style="border: none; margin-top: 0;">
+                <i class="bi bi-arrow-counterclockwise" style="color: white;"></i>
+            </button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
+    </script>
+    <script type="text/javascript">
+        (function () {
+            emailjs.init({
+                publicKey: "AV7oyGdQU5Uy5l7Rj",
+            });
+        })();
+    </script>
+    <script src="../js/main.js"></script>
+</body>
+
+</html>

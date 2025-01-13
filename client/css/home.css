@@ -1,0 +1,178 @@
+/* דפדפן רגיל */
+html,
+body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Raleway', sans-serif;
+}
+
+body {
+    background-image: url('../assets/mainphoto.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* כותרת ראשית */
+.advent-pro {
+    font-family: "Advent Pro", serif;
+    font-optical-sizing: auto;
+    font-weight: 650;
+    font-style: normal;
+    font-variation-settings: "wdth" 100;
+    font-size: 110px;
+    color: rgb(38, 39, 52);
+}
+
+/* טקסט במקטע הכניסה */
+#context {
+    font-family: "Advent Pro", serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 20px;
+    color: rgb(32, 29, 29);
+}
+
+#home {
+    padding-left: 20%;
+    padding-top: 3%;
+}
+
+
+/* Modal */
+.modal-content,
+.modal-body,
+.modal-footer button,
+.form-control {
+    font-size: 0.9rem;
+}
+
+.form-control {
+    font-size: 0.9rem;
+    background-color: white;
+}
+
+.form-control:focus {
+    border-color: #ced4da;
+    box-shadow: none;
+    background-color: white;
+}
+
+.buttons {
+    margin-left: 10%;
+    margin-top: 2%;
+    display: flex;
+    justify-content: center;
+    /* מרכז את הכפתורים */
+    flex-wrap: wrap;
+    /* מאפשר לכפתורים לשבור שורה אם הם לא נכנסים */
+    gap: 5px;
+    /* רווח מינימלי בין הכפתורים */
+}
+
+/* דפדפן רגיל */
+.buttons button {
+    width: auto;
+    /* הכפתור יקבל רוחב אוטומטי */
+    max-width: 200px;
+    /* הגבלת רוחב הכפתור */
+    margin-left: 0;
+    /* לא תהיה מרווח נוסף משמאל */
+}
+
+/* Media queries */
+@media (max-width: 1200px) {
+    .advent-pro {
+        font-size: 80px;
+    }
+
+    #home {
+        padding-left: 10%;
+    }
+
+    .buttons button {
+        width: auto;
+        /* כפתור בגודל אוטומטי */
+        max-width: 200px;
+        /* הגבלת רוחב הכפתור */
+    }
+}
+
+@media (max-width: 992px) {
+    .advent-pro {
+        font-size: 60px;
+    }
+
+    #home {
+        padding-left: 10%;
+        padding-top: 5%;
+    }
+
+    #context {
+        font-size: 18px;
+    }
+
+    .buttons button {
+        width: auto;
+        /* כפתור בגודל אוטומטי */
+        max-width: 200px;
+        /* הגבלת רוחב הכפתור */
+    }
+}
+
+@media (max-width: 768px) {
+    .advent-pro {
+        font-size: 50px;
+    }
+
+    #home {
+        padding-left: 5%;
+    }
+
+    #context {
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .buttons {
+        text-align: center;
+        margin-top: 5%;
+        justify-content: center;
+    }
+
+    .buttons button {
+        width: auto;
+        max-width: 150px;
+    }
+
+    .modal-content {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .advent-pro {
+        font-size: 45px;
+    }
+
+    #home {
+        padding-left: 5%;
+    }
+
+    #context {
+        font-size: 16px;
+        text-align: center;
+    }
+
+    .buttons button {
+        width: auto;
+        max-width: 150px;
+        margin-bottom: 5px;
+        margin-left: 20%;
+    }
+
+    .modal-content {
+        font-size: 1rem;
+    }
+}
