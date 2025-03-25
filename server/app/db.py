@@ -54,6 +54,7 @@ def create_travels_table_if_not_exists():
             isVolunteer VARCHAR(255),
             price DECIMAL(10, 2),
             driverId INT,
+            travelDuration INT,
             FOREIGN KEY (driverId) REFERENCES users(id)
         )
         """

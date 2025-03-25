@@ -19,6 +19,7 @@ function validateLoginForm(event) {
     const password = document.getElementById('loginPassword').value.trim();
     if (!name || !password) {
         alert('Please fill in all required fields');
+        console.log('Invalid login form');
         return false;
     }
     login();
@@ -114,3 +115,68 @@ async function addUser() {
         console.error('Error occurred:', error);
     }
 }
+
+function handleGoogleResponse(response) {
+    console.log("Google Response:", response);
+
+    // בדיקה אם לא קיבלנו את ה-credential מהתגובה של Google
+    if (!response || !response.credential) {
+        console.error("Google token is missing.");
+        alert("Something went wrong with Google authentication.");
+        return;
+    }
+    console.log("Sending Google token to server:", response.credential);
+
+    // שליחת בקשה לשרת עם הטוקן של Google
+    axios.post('http://127.0.0.1:5000/auth/googleLogin', {
+        googleToken: response.credential
+    })
+        .then(serverResponse => {
+            // בדיקה אם התגובה של השרת תקינה
+            if (serverResponse.status === 200) {
+                const token = serverResponse.data.token;
+                console.log("Server Response:", serverResponse.data);
+                localStorage.setItem('token', token);
+                console.log("Login successful!", serverResponse.data.user);
+                window.location.href = 'pages/main.html';  // דף הבית לאחר התחברות
+            } else {
+                console.error("Unexpected server response:", serverResponse);
+                alert("Server returned an error, please try again later.");
+            }
+        })
+        .catch(error => {
+            if (error.response) {
+                console.error("Server error:", error.response);
+            } else if (error.request) {
+                console.error("Network error:", error.request);
+            } else {
+                console.error("Error during request setup:", error.message);
+            }
+            alert("An error occurred. Please try again later.");
+        });
+}
+
+window.onload = function () {
+    console.log("Page Loaded");  // הדפסת לוג כאשר הדף נטען
+
+    // הוספת מאזין לכפתור התחברות
+    const loginButton = document.getElementById("googleLoginBtn");
+    if (loginButton) {
+        console.log("Google login button found.");
+    } else {
+        console.error("Google login button not found.");
+    }
+
+    loginButton.addEventListener("click", function () {
+        console.log("Google login button clicked now!!");  // הדפסת לוג אם הכפתור נלחץ
+        // הפעלת ה-prompt להתחברות עם גוגל
+        console.log("Initializing Google OAuth...");
+        google.accounts.id.initialize({
+            client_id: "625165215188-nc3v63edv5th9498g0en3jjk9h03p07u.apps.googleusercontent.com",
+            callback: handleGoogleResponse
+        });
+        console.log("Google OAuth initialized");
+        google.accounts.id.prompt();
+        console.log("Google sign-in prompt opened");
+    });
+};

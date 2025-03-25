@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fetchTrips();
 });
 
+
 async function fetchTrips() {
   try {
     const response = await fetch('http://localhost:5000/travels/getAllTravels');
@@ -405,7 +406,67 @@ function handleResetButtonClick() {
   resetButton.addEventListener('click', resetFilters);
 }
 
-function collectFormData() {
+async function getCoordinates(location) {
+  const geocodeUrl = `https://graphhopper.com/api/1/geocode?q=${encodeURIComponent(location)}&key=17ffd6cf-98d3-427b-8dec-f22ec0faa1b9`;
+
+  const response = await fetch(geocodeUrl);
+  const data = await response.json();
+  console.log("Geocode data:", data);  // הדפסת המידע המתקבל מה-API
+
+  // בדיקה אם יש תוצאות חיפוש
+  if (data.hits && data.hits.length > 0) {
+    // בוחרים את התוצאה שמתאימה ביותר
+    const bestMatch = data.hits.find(hit => hit.country === 'ישראל');  // חיפוש לפי מדינה, במקרה שלנו ישראל
+
+    if (bestMatch && bestMatch.point) {
+      const coordinates = bestMatch.point;
+      console.log("Selected coordinates:", coordinates);  // הדפסת הקואורדינטות שנבחרו
+      return { lat: coordinates.lat, lon: coordinates.lng };  // וודא שימוש ב-lng עבור אורך רוחב
+    } else {
+      console.error("לא נמצא מיקום מתאים עבור:", location);
+      return null;
+    }
+  } else {
+    console.error("לא נמצא מיקום עבור:", location);
+    return null;
+  }
+}
+
+async function getTravelDuration(source, destination) {
+  // קבלת קואורדינטות עבור המקור והיעד
+  const sourceCoordinates = await getCoordinates(source);
+  const destinationCoordinates = await getCoordinates(destination);
+
+  // אם לא קיבלנו קואורדינטות, מחזירים שגיאה או ערך ברירת מחדל
+  if (!sourceCoordinates || !destinationCoordinates) {
+    console.error("לא הצלחנו למצוא קואורדינטות עבור אחד מהמיקומים.");
+    return null;
+  }
+  console.log("sourceCoordinates:", sourceCoordinates);
+  console.log("destinationCoordinates:", destinationCoordinates);
+
+  // יצירת כתובת ה-URL לבקשה ל-Graphhopper
+  const apiUrl = `https://graphhopper.com/api/1/route?point=${sourceCoordinates.lat},${sourceCoordinates.lon}&point=${destinationCoordinates.lat},${destinationCoordinates.lon}&vehicle=car&key=17ffd6cf-98d3-427b-8dec-f22ec0faa1b9`;
+
+  const response = await fetch(apiUrl);
+  const data = await response.json();
+
+  // אם לא נמצא נתיב
+  if (!data.paths || data.paths.length === 0) {
+    console.error("לא נמצא נתיב בין המיקומים.");
+    return null;
+  }
+
+  // הנחה ש-Graphhopper מחזיר את זמן הנסיעה בשניות
+  const travelDurationInSeconds = data.paths[0].time / 1000;
+
+  // חישוב דקות
+  const minutes = Math.floor(travelDurationInSeconds / 60);
+
+  return minutes;
+}
+
+async function collectFormData() {
   const source = document.getElementById("addSource").value;
   const destination = document.getElementById("addDestination").value;
   const tripDate = document.getElementById("tripDate").value;
@@ -415,6 +476,8 @@ function collectFormData() {
   const isVolunteer = document.querySelector('input[name="volunteerType"]:checked').value;
   const price = document.getElementById("AddPrice").value;
 
+  const travelDuration = await getTravelDuration(source, destination);
+  console.log(travelDuration);
   return {
     source,
     destination,
@@ -423,18 +486,23 @@ function collectFormData() {
     vehicleType,
     seats,
     isVolunteer,
-    price: isVolunteer === "volunteer" ? 0 : price
+    price: isVolunteer === "volunteer" ? 0 : price,
+    travelDuration  // זמן הנסיעה בשניות
   };
 }
 
-function submitFormData(tripData) {
+async function submitFormData(tripData) {
+  const resolvedTripData = tripData instanceof Promise ? await tripData : tripData;
+  
+  console.log("Resolved tripData:", resolvedTripData);
+
   fetch('http://127.0.0.1:5000/travels/addTravel', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${localStorage.getItem('token')}`
     },
-    body: JSON.stringify(tripData)
+    body: JSON.stringify(resolvedTripData)
   })
     .then(response => {
       if (response.ok) {
@@ -471,6 +539,7 @@ function handleFormSubmit() {
   document.querySelector("form").addEventListener("submit", function (event) {
     event.preventDefault();
     const tripData = collectFormData();
+    console.log("tripData:", tripData);
     submitFormData(tripData);
   });
 }
@@ -500,5 +569,111 @@ async function getCurrentUserDetails() {
   } else {
     console.error('Failed to fetch user details');
     return null;
+  }
+}
+
+function openPopup() {
+  document.getElementById('routePopup').style.display = 'block';
+  console.log('Popup opened');
+  populateCities();
+}
+
+function closePopup() {
+  document.getElementById('routePopup').style.display = 'none';
+}
+
+// פונקציה למלא את הסלקטים עם הערים
+function populateCities() {
+  const destinationSelect = document.getElementById("A");
+  const sourceSelect = document.getElementById("B");
+
+  cities.forEach(city => {
+    const option = document.createElement("option");
+    option.value = city;
+    option.textContent = city;
+    destinationSelect.appendChild(option);
+    sourceSelect.appendChild(option.cloneNode(true));
+  });
+}
+
+function findShortestRoute(trips, start, end) {
+  let graph = {};
+
+  // בונים את הגרף
+  trips.forEach(trip => {
+    let [from, to, time] = [trip.startPoint, trip.endPoint, trip.travelDuration];;
+    if (!graph[from]) graph[from] = [];
+    if (!graph[to]) graph[to] = [];
+    graph[from].push({ destination: to, time, trip });
+  });
+
+  let distances = {};
+  let previous = {};
+  let queue = [start];
+
+  for (let city in graph) {
+    distances[city] = Infinity;
+    previous[city] = null;
+  }
+  distances[start] = 0;
+
+  while (queue.length > 0) {
+    let currentCity = queue.shift();
+    let neighbors = graph[currentCity] || []; 
+
+    for (let neighbor of neighbors) {
+      let alt = distances[currentCity] + neighbor.time;
+      if (alt < distances[neighbor.destination]) {
+        distances[neighbor.destination] = alt;
+        previous[neighbor.destination] = { city: currentCity, trip: neighbor.trip };
+        queue.push(neighbor.destination);
+      }
+    }
+  }
+
+  if (distances[end] === Infinity) {
+    return null;
+  }
+
+  let path = [];
+  let tripsInPath = [];
+  let current = end;
+  
+  while (current !== start) {
+    let prev = previous[current];
+    if (!prev) {
+      // אם אין פריט קודם (לא נוכל להגיע ליעד)
+      return null;
+    }
+    path.unshift(current);
+    tripsInPath.unshift(prev.trip);
+    current = prev.city;
+  }
+  
+  path.unshift(start);
+
+  return { path, time: distances[end], trips: tripsInPath };
+}
+
+function generateRoute() {
+  const origin = document.getElementById('A').value;
+  const destination = document.getElementById('B').value;
+
+  let result = findShortestRoute(trips, origin, destination);
+
+  if (result) {
+    // אם נמצא מסלול, מציגים את הדרך
+    let pathString = 'המסלול הקצר ביותר: ' + result.path.join(' -> ') + ' | זמן נסיעה: ' + result.time + ' דקות\n';
+    let tripsString = 'הנסיעות בדרך:\n';
+
+    result.trips.forEach(trip => {
+      tripsString += `${trip[0]} -> ${trip[1]} | זמן: ${trip[2]} דקות\n`;
+    });
+
+    alert(pathString + tripsString);
+  } else {
+    // אם לא נמצא מסלול, שולחים את המשתמש לגוגל מפס
+    let googleMapsUrl = `https://www.google.com/maps/dir/${origin}/${destination}`;
+    window.open(googleMapsUrl, '_blank');
   }
 }
